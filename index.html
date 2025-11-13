@@ -20,6 +20,9 @@
         const CLOUDINARY_UPLOAD_PRESET = 'family_photos';
         const CLOUDINARY_FOLDER = 'family-organizer';
 
+        // GitHub Pages URL for photo index
+        const PHOTO_INDEX_URL = 'https://architeketh.github.io/family-photo-organizer/photos.json';
+
         const FamilyPhotoOrganizer = () => {
             const [photos, setPhotos] = useState([]);
             const [view, setView] = useState('grid');
@@ -37,9 +40,10 @@
             const [uploading, setUploading] = useState(false);
             const [uploadProgress, setUploadProgress] = useState(0);
             const [loading, setLoading] = useState(true);
+            const [showPhotoIndexData, setShowPhotoIndexData] = useState(false);
 
             useEffect(() => {
-                loadPhotosFromCloud();
+                loadPhotosFromIndex();
             }, []);
 
             useEffect(() => {
@@ -51,47 +55,39 @@
                 }
             }, [slideshowActive, slideshowPhotos.length]);
 
-            const loadPhotosFromCloud = async () => {
+            const loadPhotosFromIndex = async () => {
                 setLoading(true);
-                setDebugInfo('Loading photos from cloud...');
+                setDebugInfo('Loading photos...');
                 
                 try {
-                    // Fetch all images from Cloudinary folder
-                    const response = await fetch(
-                        `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/list/${CLOUDINARY_FOLDER}.json`
-                    );
+                    const response = await fetch(PHOTO_INDEX_URL + '?t=' + Date.now());
                     
                     if (!response.ok) {
-                        throw new Error('Failed to fetch photos');
+                        throw new Error('Photo index not found');
                     }
                     
                     const data = await response.json();
                     
-                    if (data.resources && data.resources.length > 0) {
+                    if (data.photos && data.photos.length > 0) {
                         // Load local metadata (albums, favorites)
                         const localMeta = JSON.parse(localStorage.getItem('photo-metadata') || '{}');
                         
-                        // Convert Cloudinary resources to our photo format
-                        const cloudPhotos = data.resources.map(resource => {
-                            const photoId = resource.public_id;
-                            const meta = localMeta[photoId] || {};
-                            
+                        // Merge cloud data with local metadata
+                        const mergedPhotos = data.photos.map(photo => {
+                            const meta = localMeta[photo.id] || {};
                             return {
-                                id: photoId,
-                                src: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/${resource.public_id}.${resource.format}`,
-                                name: meta.name || resource.public_id.split('/').pop() + '.' + resource.format,
-                                date: meta.date || resource.created_at,
-                                album: meta.album || 'Family',
+                                ...photo,
+                                album: meta.album || photo.album || 'Family',
                                 favorite: meta.favorite || false,
                                 tags: meta.tags || []
                             };
                         });
                         
-                        setPhotos(cloudPhotos);
-                        setDebugInfo(`✅ Loaded ${cloudPhotos.length} photos from cloud`);
+                        setPhotos(mergedPhotos);
+                        setDebugInfo(`✅ Loaded ${mergedPhotos.length} photos from cloud`);
                     } else {
                         setPhotos([]);
-                        setDebugInfo('No photos in cloud yet - upload to get started!');
+                        setDebugInfo('No photos yet - upload to get started!');
                     }
                     
                     // Load albums
@@ -100,7 +96,8 @@
                         setAlbums(JSON.parse(storedAlbums));
                     }
                 } catch (e) {
-                    setDebugInfo(`Error loading from cloud: ${e.message}`);
+                    setDebugInfo('No shared photos yet. Upload photos to start!');
+                    setPhotos([]);
                     console.error('Load error:', e);
                 }
                 
@@ -152,12 +149,27 @@
                 }
             };
 
+            const generatePhotoIndexJSON = (currentPhotos) => {
+                const indexData = {
+                    photos: currentPhotos.map(p => ({
+                        id: p.id,
+                        src: p.src,
+                        name: p.name,
+                        date: p.date,
+                        album: p.album
+                    })),
+                    updated: new Date().toISOString()
+                };
+                return JSON.stringify(indexData, null, 2);
+            };
+
             const handleFileUpload = async (e) => {
                 const files = Array.from(e.target.files);
                 setUploading(true);
                 setDebugInfo(`Uploading ${files.length} files to cloud...`);
                 
                 let uploaded = 0;
+                const newPhotosArray = [];
                 
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
@@ -175,6 +187,8 @@
                                 favorite: false,
                                 tags: []
                             };
+                            
+                            newPhotosArray.push(newPhoto);
                             
                             // Save metadata locally
                             savePhotoMetadata(newPhoto.id, {
@@ -194,11 +208,17 @@
                     }
                 }
                 
+                // Update photos state
+                const updatedPhotos = [...photos, ...newPhotosArray];
+                setPhotos(updatedPhotos);
+                
+                // Generate the updated photos.json content
+                const indexJSON = generatePhotoIndexJSON(updatedPhotos);
+                
                 setUploading(false);
                 setUploadProgress(0);
-                
-                // Reload photos from cloud to show new uploads
-                await loadPhotosFromCloud();
+                setDebugInfo(`✅ Uploaded ${uploaded} photos! Copy the JSON below to photos.json`);
+                setShowPhotoIndexData(indexJSON);
             };
 
             const toggleFavorite = (photoId) => {
@@ -248,11 +268,7 @@
             };
 
             const deleteSelected = async () => {
-                if (confirm(`Delete ${selectedPhotos.size} selected photos? This will remove them from Cloudinary permanently.`)) {
-                    setDebugInfo('Deleting photos...');
-                    
-                    // Note: Deleting from Cloudinary requires authenticated API calls
-                    // For now, we'll just remove from local metadata
+                if (confirm(`Remove ${selectedPhotos.size} selected photos from organizer?`)) {
                     const allMeta = JSON.parse(localStorage.getItem('photo-metadata') || '{}');
                     selectedPhotos.forEach(photoId => {
                         delete allMeta[photoId];
@@ -262,7 +278,11 @@
                     const updatedPhotos = photos.filter(p => !selectedPhotos.has(p.id));
                     setPhotos(updatedPhotos);
                     setSelectedPhotos(new Set());
-                    setDebugInfo('Photos removed from organizer');
+                    
+                    // Generate updated index
+                    const indexJSON = generatePhotoIndexJSON(updatedPhotos);
+                    setShowPhotoIndexData(indexJSON);
+                    setDebugInfo('Photos removed. Copy JSON below to update photos.json');
                 }
             };
 
@@ -303,15 +323,20 @@
             };
 
             const clearAllData = () => {
-                if (confirm('Clear local settings? Photos will remain in Cloudinary.')) {
+                if (confirm('Clear local settings? Photos will remain in cloud.')) {
                     localStorage.clear();
                     setAlbums(['Family', 'Vacation', 'Holidays']);
-                    loadPhotosFromCloud();
+                    loadPhotosFromIndex();
                 }
             };
 
             const refreshPhotos = () => {
-                loadPhotosFromCloud();
+                loadPhotosFromIndex();
+            };
+
+            const copyToClipboard = () => {
+                navigator.clipboard.writeText(showPhotoIndexData);
+                alert('JSON copied to clipboard! Now paste it into photos.json in GitHub');
             };
 
             const filteredPhotos = photos.filter(photo => {
@@ -330,7 +355,7 @@
                 return matchesSearch && matchesAlbum;
             });
 
-            // SVG Icons
+            // SVG Icons (keeping all the same icons from before)
             const UploadIcon = () => (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
@@ -412,6 +437,12 @@
                 </svg>
             );
 
+            const CopyIcon = () => (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+            );
+
             if (loading) {
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -419,12 +450,108 @@
                             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
                             <p className="text-xl text-gray-700">Loading photos from cloud...</p>
                         </div>
+
+                        <div className="flex-1">
+                            {selectedPhotos.size > 0 && (
+                                <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex items-center justify-between">
+                                    <span className="text-gray-700">{selectedPhotos.size} selected</span>
+                                    <div className="flex gap-2">
+                                        <button onClick={startSlideshow} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
+                                            <PlayIcon />
+                                            Start Slideshow
+                                        </button>
+                                        <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete Selected</button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {filteredPhotos.length === 0 ? (
+                                <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                                    <div className="flex justify-center mb-4"><UploadIcon /></div>
+                                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No photos yet</h3>
+                                    <p className="text-gray-500">Upload your first photos to cloud storage!</p>
+                                </div>
+                            ) : view === 'grid' ? (
+                                <div className="grid grid-cols-3 gap-4">
+                                    {filteredPhotos.map(photo => (
+                                        <div key={photo.id} className={`bg-white rounded-lg shadow-md overflow-hidden ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
+                                            <div className="relative group">
+                                                <img src={photo.src} alt={photo.name} className="w-full h-48 object-cover cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
+                                                <div className="absolute top-2 left-2">
+                                                    <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-5 h-5 cursor-pointer"/>
+                                                </div>
+                                                <button onClick={() => toggleFavorite(photo.id)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                                                    <HeartIcon filled={photo.favorite} />
+                                                </button>
+                                            </div>
+                                            <div className="p-3">
+                                                <p className="font-medium text-gray-800 truncate">{photo.name}</p>
+                                                <p className="text-sm text-gray-500">{new Date(photo.date).toLocaleDateString()}</p>
+                                                <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="w-full mt-2 px-2 py-1 text-sm border rounded">
+                                                    {albums.map(album => (
+                                                        <option key={album} value={album}>{album}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {filteredPhotos.map(photo => (
+                                        <div key={photo.id} className={`bg-white rounded-lg shadow-md overflow-hidden flex items-center p-4 ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
+                                            <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-5 h-5 cursor-pointer mr-4"/>
+                                            <img src={photo.src} alt={photo.name} className="w-24 h-24 object-cover rounded cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
+                                            <div className="flex-1 ml-4">
+                                                <p className="font-medium text-gray-800">{photo.name}</p>
+                                                <p className="text-sm text-gray-500">{new Date(photo.date).toLocaleDateString()}</p>
+                                                <p className="text-sm text-gray-600 mt-1">Album: {photo.album}</p>
+                                            </div>
+                                            <button onClick={() => toggleFavorite(photo.id)} className="p-2 hover:bg-gray-100 rounded-full">
+                                                <HeartIcon filled={photo.favorite} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<FamilyPhotoOrganizer />, document.getElementById('root'));
+    </script>
+</body>
+</html>
                     </div>
                 );
             }
 
             return (
                 <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+                    {/* JSON Data Modal */}
+                    {showPhotoIndexData && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowPhotoIndexData(false)}>
+                            <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-96 overflow-auto" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-bold">Update photos.json in GitHub</h3>
+                                    <button onClick={() => setShowPhotoIndexData(false)} className="text-gray-500 hover:text-gray-700">
+                                        <XIcon />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-4">Copy this content and paste it into your photos.json file in GitHub</p>
+                                <div className="relative">
+                                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-64">{showPhotoIndexData}</pre>
+                                    <button onClick={copyToClipboard} className="absolute top-2 right-2 px-3 py-1 bg-indigo-600 text-white rounded text-sm flex items-center gap-2">
+                                        <CopyIcon />
+                                        Copy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Lightbox */}
                     {lightboxPhoto && (
                         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={() => setLightboxPhoto(null)}>
@@ -538,77 +665,3 @@
                                 ))}
                             </div>
                         </div>
-
-                        <div className="flex-1">
-                            {selectedPhotos.size > 0 && (
-                                <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex items-center justify-between">
-                                    <span className="text-gray-700">{selectedPhotos.size} selected</span>
-                                    <div className="flex gap-2">
-                                        <button onClick={startSlideshow} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2">
-                                            <PlayIcon />
-                                            Start Slideshow
-                                        </button>
-                                        <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Delete Selected</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {filteredPhotos.length === 0 ? (
-                                <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                                    <div className="flex justify-center mb-4"><UploadIcon /></div>
-                                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No photos yet</h3>
-                                    <p className="text-gray-500">Upload your first photos to cloud storage!</p>
-                                </div>
-                            ) : view === 'grid' ? (
-                                <div className="grid grid-cols-3 gap-4">
-                                    {filteredPhotos.map(photo => (
-                                        <div key={photo.id} className={`bg-white rounded-lg shadow-md overflow-hidden ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
-                                            <div className="relative group">
-                                                <img src={photo.src} alt={photo.name} className="w-full h-48 object-cover cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
-                                                <div className="absolute top-2 left-2">
-                                                    <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-5 h-5 cursor-pointer"/>
-                                                </div>
-                                                <button onClick={() => toggleFavorite(photo.id)} className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
-                                                    <HeartIcon filled={photo.favorite} />
-                                                </button>
-                                            </div>
-                                            <div className="p-3">
-                                                <p className="font-medium text-gray-800 truncate">{photo.name}</p>
-                                                <p className="text-sm text-gray-500">{new Date(photo.date).toLocaleDateString()}</p>
-                                                <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="w-full mt-2 px-2 py-1 text-sm border rounded">
-                                                    {albums.map(album => (
-                                                        <option key={album} value={album}>{album}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {filteredPhotos.map(photo => (
-                                        <div key={photo.id} className={`bg-white rounded-lg shadow-md overflow-hidden flex items-center p-4 ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
-                                            <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-5 h-5 cursor-pointer mr-4"/>
-                                            <img src={photo.src} alt={photo.name} className="w-24 h-24 object-cover rounded cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
-                                            <div className="flex-1 ml-4">
-                                                <p className="font-medium text-gray-800">{photo.name}</p>
-                                                <p className="text-sm text-gray-500">{new Date(photo.date).toLocaleDateString()}</p>
-                                                <p className="text-sm text-gray-600 mt-1">Album: {photo.album}</p>
-                                            </div>
-                                            <button onClick={() => toggleFavorite(photo.id)} className="p-2 hover:bg-gray-100 rounded-full">
-                                                <HeartIcon filled={photo.favorite} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        ReactDOM.render(<FamilyPhotoOrganizer />, document.getElementById('root'));
-    </script>
-</body>
-</html>
