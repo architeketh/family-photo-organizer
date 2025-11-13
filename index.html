@@ -227,22 +227,31 @@
                 const currentPhoto = filteredPhotos[currentIndex];
                 const previousPhoto = filteredPhotos[currentIndex - 1];
                 
-                const currentOrder = currentPhoto.sortOrder ?? currentIndex;
-                const previousOrder = previousPhoto.sortOrder ?? (currentIndex - 1);
+                // Use actual index as fallback if sortOrder doesn't exist
+                const currentOrder = typeof currentPhoto.sortOrder === 'number' ? currentPhoto.sortOrder : currentIndex * 100;
+                const previousOrder = typeof previousPhoto.sortOrder === 'number' ? previousPhoto.sortOrder : (currentIndex - 1) * 100;
                 
-                // Optimistically update UI first
+                // Swap the orders
+                const newCurrentOrder = previousOrder;
+                const newPreviousOrder = currentOrder;
+                
+                // Update UI immediately
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: previousOrder };
-                    if (p.id === previousPhoto.id) return { ...p, sortOrder: currentOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
+                    if (p.id === previousPhoto.id) return { ...p, sortOrder: newPreviousOrder };
                     return p;
                 });
                 setPhotos(updatedPhotos);
                 
-                // Then save to Firebase in background
+                // Save to Firebase in background
                 Promise.all([
-                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: previousOrder }),
-                    updatePhotoInFirebase(previousPhoto.id, { sortOrder: currentOrder })
-                ]).catch(err => console.error('Error saving order:', err));
+                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder }),
+                    updatePhotoInFirebase(previousPhoto.id, { sortOrder: newPreviousOrder })
+                ]).catch(err => {
+                    console.error('Error saving order:', err);
+                    // Reload if save fails
+                    loadPhotosFromFirebase();
+                });
             };
 
             const movePhotoDown = async (photoId) => {
@@ -252,22 +261,31 @@
                 const currentPhoto = filteredPhotos[currentIndex];
                 const nextPhoto = filteredPhotos[currentIndex + 1];
                 
-                const currentOrder = currentPhoto.sortOrder ?? currentIndex;
-                const nextOrder = nextPhoto.sortOrder ?? (currentIndex + 1);
+                // Use actual index as fallback if sortOrder doesn't exist
+                const currentOrder = typeof currentPhoto.sortOrder === 'number' ? currentPhoto.sortOrder : currentIndex * 100;
+                const nextOrder = typeof nextPhoto.sortOrder === 'number' ? nextPhoto.sortOrder : (currentIndex + 1) * 100;
                 
-                // Optimistically update UI first
+                // Swap the orders
+                const newCurrentOrder = nextOrder;
+                const newNextOrder = currentOrder;
+                
+                // Update UI immediately
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: nextOrder };
-                    if (p.id === nextPhoto.id) return { ...p, sortOrder: currentOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
+                    if (p.id === nextPhoto.id) return { ...p, sortOrder: newNextOrder };
                     return p;
                 });
                 setPhotos(updatedPhotos);
                 
-                // Then save to Firebase in background
+                // Save to Firebase in background
                 Promise.all([
-                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: nextOrder }),
-                    updatePhotoInFirebase(nextPhoto.id, { sortOrder: currentOrder })
-                ]).catch(err => console.error('Error saving order:', err));
+                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder }),
+                    updatePhotoInFirebase(nextPhoto.id, { sortOrder: newNextOrder })
+                ]).catch(err => {
+                    console.error('Error saving order:', err);
+                    // Reload if save fails
+                    loadPhotosFromFirebase();
+                });
             };
 
             const downloadPhoto = async (photo) => {
@@ -576,13 +594,6 @@
                             )}
 
                             <div className="flex flex-col md:flex-row gap-3">
-                                <input 
-                                    type="text" 
-                                    placeholder="Search photos..." 
-                                    value={searchTerm} 
-                                    onChange={(e) => setSearchTerm(e.target.value)} 
-                                    className="flex-1 px-5 py-3 bg-gray-800 text-white border border-gray-700 focus:border-indigo-500 outline-none"
-                                />
                                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-5 py-3 bg-gray-800 text-white border border-gray-700 outline-none">
                                     <option value="custom">Custom Order</option>
                                     <option value="date-desc">Newest First</option>
@@ -591,7 +602,7 @@
                                     <option value="name-desc">Name (Z-A)</option>
                                     <option value="album">By Album</option>
                                 </select>
-                                <label className={`px-6 py-3 ${uploading ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white cursor-pointer text-center whitespace-nowrap font-semibold`}>
+                                <label className={`flex-1 px-6 py-3 ${uploading ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white cursor-pointer text-center whitespace-nowrap font-semibold`}>
                                     {uploading ? `Uploading ${uploadProgress}%...` : 'Upload Photos'}
                                     <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading}/>
                                 </label>
