@@ -710,7 +710,7 @@
                                         <p className="text-gray-400 text-lg">Upload your first memories to get started!</p>
                                     </div>
                                 ) : view === 'grid' ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                         {filteredPhotos.map((photo, index) => (
                                             <div key={photo.id} className={`bg-gray-900 border border-gray-800 overflow-hidden ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
                                                 <div className="relative aspect-square">
