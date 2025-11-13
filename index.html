@@ -220,72 +220,56 @@
                 await loadPhotosFromFirebase();
             };
 
-            const movePhotoUp = async (photoId) => {
+            const movePhotoToTop = async (photoId) => {
                 const currentIndex = filteredPhotos.findIndex(p => p.id === photoId);
                 if (currentIndex <= 0) return;
                 
                 const currentPhoto = filteredPhotos[currentIndex];
-                const previousPhoto = filteredPhotos[currentIndex - 1];
+                const firstPhoto = filteredPhotos[0];
                 
-                // Use actual index as fallback if sortOrder doesn't exist
-                const currentOrder = typeof currentPhoto.sortOrder === 'number' ? currentPhoto.sortOrder : currentIndex * 100;
-                const previousOrder = typeof previousPhoto.sortOrder === 'number' ? previousPhoto.sortOrder : (currentIndex - 1) * 100;
-                
-                // Swap the orders
-                const newCurrentOrder = previousOrder;
-                const newPreviousOrder = currentOrder;
+                // Get the first photo's order and subtract to place before it
+                const firstOrder = typeof firstPhoto.sortOrder === 'number' ? firstPhoto.sortOrder : 0;
+                const newOrder = firstOrder - 1;
                 
                 // Update UI immediately
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
-                    if (p.id === previousPhoto.id) return { ...p, sortOrder: newPreviousOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newOrder };
                     return p;
                 });
                 setPhotos(updatedPhotos);
                 
                 // Save to Firebase in background
-                Promise.all([
-                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder }),
-                    updatePhotoInFirebase(previousPhoto.id, { sortOrder: newPreviousOrder })
-                ]).catch(err => {
-                    console.error('Error saving order:', err);
-                    // Reload if save fails
-                    loadPhotosFromFirebase();
-                });
+                updatePhotoInFirebase(currentPhoto.id, { sortOrder: newOrder })
+                    .catch(err => {
+                        console.error('Error saving order:', err);
+                        loadPhotosFromFirebase();
+                    });
             };
 
-            const movePhotoDown = async (photoId) => {
+            const movePhotoToBottom = async (photoId) => {
                 const currentIndex = filteredPhotos.findIndex(p => p.id === photoId);
                 if (currentIndex >= filteredPhotos.length - 1) return;
                 
                 const currentPhoto = filteredPhotos[currentIndex];
-                const nextPhoto = filteredPhotos[currentIndex + 1];
+                const lastPhoto = filteredPhotos[filteredPhotos.length - 1];
                 
-                // Use actual index as fallback if sortOrder doesn't exist
-                const currentOrder = typeof currentPhoto.sortOrder === 'number' ? currentPhoto.sortOrder : currentIndex * 100;
-                const nextOrder = typeof nextPhoto.sortOrder === 'number' ? nextPhoto.sortOrder : (currentIndex + 1) * 100;
-                
-                // Swap the orders
-                const newCurrentOrder = nextOrder;
-                const newNextOrder = currentOrder;
+                // Get the last photo's order and add to place after it
+                const lastOrder = typeof lastPhoto.sortOrder === 'number' ? lastPhoto.sortOrder : filteredPhotos.length - 1;
+                const newOrder = lastOrder + 1;
                 
                 // Update UI immediately
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
-                    if (p.id === nextPhoto.id) return { ...p, sortOrder: newNextOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newOrder };
                     return p;
                 });
                 setPhotos(updatedPhotos);
                 
                 // Save to Firebase in background
-                Promise.all([
-                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder }),
-                    updatePhotoInFirebase(nextPhoto.id, { sortOrder: newNextOrder })
-                ]).catch(err => {
-                    console.error('Error saving order:', err);
-                    // Reload if save fails
-                    loadPhotosFromFirebase();
-                });
+                updatePhotoInFirebase(currentPhoto.id, { sortOrder: newOrder })
+                    .catch(err => {
+                        console.error('Error saving order:', err);
+                        loadPhotosFromFirebase();
+                    });
             };
 
             const downloadPhoto = async (photo) => {
@@ -720,7 +704,7 @@
 
                                 {sortBy === 'custom' && (
                                     <div className="bg-yellow-900 border border-yellow-700 p-3 mb-4 text-yellow-100 text-sm">
-                                        💡 <strong>Custom Order Mode:</strong> Use ⬆️ and ⬇️ buttons to rearrange photos in your preferred order
+                                        💡 <strong>Custom Order Mode:</strong> Use ⏫ Top and ⏬ Bottom buttons to move photos to the beginning or end of the list
                                     </div>
                                 )}
 
@@ -745,20 +729,20 @@
                                                     {sortBy === 'custom' && (
                                                         <div className="flex gap-1">
                                                             <button 
-                                                                onClick={() => movePhotoUp(photo.id)} 
+                                                                onClick={() => movePhotoToTop(photo.id)} 
                                                                 disabled={index === 0}
-                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-sm ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                title="Move up"
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move to top"
                                                             >
-                                                                ⬆️
+                                                                ⏫ Top
                                                             </button>
                                                             <button 
-                                                                onClick={() => movePhotoDown(photo.id)} 
+                                                                onClick={() => movePhotoToBottom(photo.id)} 
                                                                 disabled={index === filteredPhotos.length - 1}
-                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-sm ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                title="Move down"
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move to bottom"
                                                             >
-                                                                ⬇️
+                                                                ⏬ Bottom
                                                             </button>
                                                         </div>
                                                     )}
@@ -794,20 +778,20 @@
                                                     {sortBy === 'custom' && (
                                                         <>
                                                             <button 
-                                                                onClick={() => movePhotoUp(photo.id)} 
+                                                                onClick={() => movePhotoToTop(photo.id)} 
                                                                 disabled={index === 0}
-                                                                className={`p-2 text-gray-400 hover:text-white ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                title="Move up"
+                                                                className={`p-2 text-gray-400 hover:text-white text-xs ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move to top"
                                                             >
-                                                                ⬆️
+                                                                ⏫
                                                             </button>
                                                             <button 
-                                                                onClick={() => movePhotoDown(photo.id)} 
+                                                                onClick={() => movePhotoToBottom(photo.id)} 
                                                                 disabled={index === filteredPhotos.length - 1}
-                                                                className={`p-2 text-gray-400 hover:text-white ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                                                                title="Move down"
+                                                                className={`p-2 text-gray-400 hover:text-white text-xs ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move to bottom"
                                                             >
-                                                                ⬇️
+                                                                ⏬
                                                             </button>
                                                         </>
                                                     )}
