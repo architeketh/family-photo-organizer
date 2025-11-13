@@ -35,7 +35,7 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
         } catch (e) {
-            console.log("Firebase not configured yet");
+            console.log("Firebase initialization error");
         }
 
         const CLOUDINARY_CLOUD_NAME = 'djrapivj9';
@@ -45,11 +45,14 @@
         const FamilyPhotoOrganizer = () => {
             const [photos, setPhotos] = useState([]);
             const [view, setView] = useState('grid');
+            const [sortBy, setSortBy] = useState('date-desc');
             const [albums, setAlbums] = useState(['Family', 'Vacation', 'Holidays']);
             const [selectedAlbum, setSelectedAlbum] = useState('All Photos');
             const [searchTerm, setSearchTerm] = useState('');
             const [showNewAlbum, setShowNewAlbum] = useState(false);
             const [newAlbumName, setNewAlbumName] = useState('');
+            const [editingAlbum, setEditingAlbum] = useState(null);
+            const [editAlbumName, setEditAlbumName] = useState('');
             const [selectedPhotos, setSelectedPhotos] = useState(new Set());
             const [debugInfo, setDebugInfo] = useState('');
             const [lightboxPhoto, setLightboxPhoto] = useState(null);
@@ -79,12 +82,12 @@
                 
                 try {
                     if (!db) {
-                        setDebugInfo('⚠️ Firebase not configured. Add your Firebase config to the code.');
+                        setDebugInfo('⚠️ Firebase not configured.');
                         setLoading(false);
                         return;
                     }
 
-                    const snapshot = await db.collection('photos').orderBy('date', 'desc').get();
+                    const snapshot = await db.collection('photos').get();
                     const loadedPhotos = [];
                     
                     snapshot.forEach(doc => {
@@ -237,6 +240,15 @@
                 }
             };
 
+            const deleteSinglePhoto = async (photoId) => {
+                if (confirm('Delete this photo permanently?')) {
+                    await deletePhotoFromFirebase(photoId);
+                    const updatedPhotos = photos.filter(p => p.id !== photoId);
+                    setPhotos(updatedPhotos);
+                    setDebugInfo('Photo deleted');
+                }
+            };
+
             const toggleFavorite = async (photoId) => {
                 const photo = photos.find(p => p.id === photoId);
                 if (photo) {
@@ -257,6 +269,64 @@
                     await saveAlbumsToFirebase(updatedAlbums);
                     setNewAlbumName('');
                     setShowNewAlbum(false);
+                    setDebugInfo('Album created');
+                }
+            };
+
+            const startEditingAlbum = (albumName) => {
+                setEditingAlbum(albumName);
+                setEditAlbumName(albumName);
+            };
+
+            const saveAlbumRename = async () => {
+                if (editAlbumName.trim() && editAlbumName !== editingAlbum && !albums.includes(editAlbumName.trim())) {
+                    const updatedAlbums = albums.map(a => a === editingAlbum ? editAlbumName.trim() : a);
+                    setAlbums(updatedAlbums);
+                    await saveAlbumsToFirebase(updatedAlbums);
+                    
+                    // Update all photos with the old album name
+                    const photosToUpdate = photos.filter(p => p.album === editingAlbum);
+                    for (const photo of photosToUpdate) {
+                        await updatePhotoInFirebase(photo.id, { album: editAlbumName.trim() });
+                    }
+                    
+                    const updatedPhotos = photos.map(p => 
+                        p.album === editingAlbum ? { ...p, album: editAlbumName.trim() } : p
+                    );
+                    setPhotos(updatedPhotos);
+                    
+                    if (selectedAlbum === editingAlbum) {
+                        setSelectedAlbum(editAlbumName.trim());
+                    }
+                    
+                    setEditingAlbum(null);
+                    setEditAlbumName('');
+                    setDebugInfo('Album renamed');
+                }
+            };
+
+            const deleteAlbum = async (albumName) => {
+                if (confirm(`Delete album "${albumName}"? Photos will be moved to "Family" album.`)) {
+                    const updatedAlbums = albums.filter(a => a !== albumName);
+                    setAlbums(updatedAlbums);
+                    await saveAlbumsToFirebase(updatedAlbums);
+                    
+                    // Move photos from deleted album to Family
+                    const photosToMove = photos.filter(p => p.album === albumName);
+                    for (const photo of photosToMove) {
+                        await updatePhotoInFirebase(photo.id, { album: 'Family' });
+                    }
+                    
+                    const updatedPhotos = photos.map(p => 
+                        p.album === albumName ? { ...p, album: 'Family' } : p
+                    );
+                    setPhotos(updatedPhotos);
+                    
+                    if (selectedAlbum === albumName) {
+                        setSelectedAlbum('All Photos');
+                    }
+                    
+                    setDebugInfo('Album deleted');
                 }
             };
 
@@ -320,7 +390,25 @@
                 setSlideshowIndex((prev) => (prev - 1 + slideshowPhotos.length) % slideshowPhotos.length);
             };
 
-            const filteredPhotos = photos.filter(photo => {
+            const sortPhotos = (photosToSort) => {
+                const sorted = [...photosToSort];
+                switch(sortBy) {
+                    case 'date-desc':
+                        return sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    case 'date-asc':
+                        return sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
+                    case 'name-asc':
+                        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+                    case 'name-desc':
+                        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+                    case 'album':
+                        return sorted.sort((a, b) => a.album.localeCompare(b.album));
+                    default:
+                        return sorted;
+                }
+            };
+
+            const filteredPhotos = sortPhotos(photos.filter(photo => {
                 const matchesSearch = photo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                     photo.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
                 
@@ -334,7 +422,7 @@
                 }
                 
                 return matchesSearch && matchesAlbum;
-            });
+            }));
 
             if (loading) {
                 return (
@@ -352,9 +440,14 @@
                     {lightboxPhoto && (
                         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onClick={() => setLightboxPhoto(null)}>
                             <button onClick={() => setLightboxPhoto(null)} className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300">✕</button>
-                            <button onClick={() => downloadPhoto(lightboxPhoto)} className="absolute top-4 left-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                                Download
-                            </button>
+                            <div className="absolute top-4 left-4 flex gap-2">
+                                <button onClick={() => downloadPhoto(lightboxPhoto)} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                    Download
+                                </button>
+                                <button onClick={() => { deleteSinglePhoto(lightboxPhoto.id); setLightboxPhoto(null); }} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                    Delete
+                                </button>
+                            </div>
                             <img src={lightboxPhoto.src} alt={lightboxPhoto.name} className="max-w-full max-h-full object-contain"/>
                         </div>
                     )}
@@ -389,9 +482,16 @@
                                 </div>
                             )}
 
-                            <div className="flex flex-col md:flex-row gap-4">
+                            <div className="flex flex-col md:flex-row gap-4 mb-4">
                                 <input type="text" placeholder="Search photos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="flex-1 px-4 py-2 border rounded-lg"/>
-                                <label className={`px-4 py-2 ${uploading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-lg cursor-pointer text-center`}>
+                                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-2 border rounded-lg">
+                                    <option value="date-desc">Newest First</option>
+                                    <option value="date-asc">Oldest First</option>
+                                    <option value="name-asc">Name (A-Z)</option>
+                                    <option value="name-desc">Name (Z-A)</option>
+                                    <option value="album">By Album</option>
+                                </select>
+                                <label className={`px-4 py-2 ${uploading ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-lg cursor-pointer text-center whitespace-nowrap`}>
                                     {uploading ? `Uploading ${uploadProgress}%...` : 'Upload Photos'}
                                     <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading}/>
                                 </label>
@@ -426,9 +526,44 @@
                                     )}
 
                                     {albums.map(album => (
-                                        <button key={album} onClick={() => setSelectedAlbum(album)} className={`w-full text-left px-3 py-2 rounded mb-1 ${selectedAlbum === album ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`}>
-                                            {album} ({photos.filter(p => p.album === album).length})
-                                        </button>
+                                        <div key={album} className="mb-1">
+                                            {editingAlbum === album ? (
+                                                <div className="flex gap-1">
+                                                    <input 
+                                                        type="text" 
+                                                        value={editAlbumName} 
+                                                        onChange={(e) => setEditAlbumName(e.target.value)} 
+                                                        className="flex-1 px-2 py-1 text-sm border rounded"
+                                                        onKeyPress={(e) => e.key === 'Enter' && saveAlbumRename()}
+                                                    />
+                                                    <button onClick={saveAlbumRename} className="px-2 py-1 bg-green-600 text-white rounded text-xs">✓</button>
+                                                    <button onClick={() => setEditingAlbum(null)} className="px-2 py-1 bg-gray-400 text-white rounded text-xs">✕</button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center group">
+                                                    <button 
+                                                        onClick={() => setSelectedAlbum(album)} 
+                                                        className={`flex-1 text-left px-3 py-2 rounded ${selectedAlbum === album ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'}`}
+                                                    >
+                                                        {album} ({photos.filter(p => p.album === album).length})
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => startEditingAlbum(album)} 
+                                                        className="opacity-0 group-hover:opacity-100 px-2 text-gray-600 hover:text-indigo-600"
+                                                        title="Rename"
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deleteAlbum(album)} 
+                                                        className="opacity-0 group-hover:opacity-100 px-2 text-gray-600 hover:text-red-600"
+                                                        title="Delete"
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -463,6 +598,9 @@
                                                     <button onClick={() => downloadPhoto(photo)} className="absolute bottom-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 text-xs">
                                                         ⬇️
                                                     </button>
+                                                    <button onClick={() => deleteSinglePhoto(photo.id)} className="absolute bottom-2 left-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 text-xs">
+                                                        🗑️
+                                                    </button>
                                                 </div>
                                                 <div className="p-3">
                                                     <p className="font-medium text-gray-800 truncate text-sm">{photo.name}</p>
@@ -490,6 +628,9 @@
                                                 <div className="flex gap-2 flex-shrink-0">
                                                     <button onClick={() => downloadPhoto(photo)} className="p-2 hover:bg-gray-100 rounded" title="Download">
                                                         ⬇️
+                                                    </button>
+                                                    <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 hover:bg-gray-100 rounded" title="Delete">
+                                                        🗑️
                                                     </button>
                                                     <button onClick={() => toggleFavorite(photo.id)} className="p-2 hover:bg-gray-100 rounded">
                                                         {photo.favorite ? '❤️' : '🤍'}
