@@ -46,7 +46,7 @@
         const FamilyPhotoOrganizer = () => {
             const [photos, setPhotos] = useState([]);
             const [view, setView] = useState('grid');
-            const [sortBy, setSortBy] = useState('date-desc');
+            const [sortBy, setSortBy] = useState('custom');
             const [albums, setAlbums] = useState(['Family', 'Vacation', 'Holidays']);
             const [selectedAlbum, setSelectedAlbum] = useState('Favorites');
             const [searchTerm, setSearchTerm] = useState('');
@@ -183,6 +183,7 @@
                 setDebugInfo(`Uploading ${files.length} files...`);
                 
                 let uploaded = 0;
+                const maxOrder = Math.max(...photos.map(p => p.sortOrder || 0), 0);
                 
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
@@ -197,7 +198,8 @@
                                 date: new Date().toISOString(),
                                 album: selectedAlbum === 'All Photos' || selectedAlbum === 'Favorites' ? 'Family' : selectedAlbum,
                                 favorite: false,
-                                tags: []
+                                tags: [],
+                                sortOrder: maxOrder + uploaded + 1
                             };
                             
                             await savePhotoToFirebase(newPhoto);
@@ -216,6 +218,50 @@
                 setDebugInfo(`✅ Uploaded ${uploaded} photos!`);
                 
                 await loadPhotosFromFirebase();
+            };
+
+            const movePhotoUp = async (photoId) => {
+                const currentIndex = filteredPhotos.findIndex(p => p.id === photoId);
+                if (currentIndex <= 0) return;
+                
+                const currentPhoto = filteredPhotos[currentIndex];
+                const previousPhoto = filteredPhotos[currentIndex - 1];
+                
+                const tempOrder = currentPhoto.sortOrder || currentIndex;
+                const newCurrentOrder = previousPhoto.sortOrder || (currentIndex - 1);
+                
+                await updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder });
+                await updatePhotoInFirebase(previousPhoto.id, { sortOrder: tempOrder });
+                
+                const updatedPhotos = photos.map(p => {
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
+                    if (p.id === previousPhoto.id) return { ...p, sortOrder: tempOrder };
+                    return p;
+                });
+                
+                setPhotos(updatedPhotos);
+            };
+
+            const movePhotoDown = async (photoId) => {
+                const currentIndex = filteredPhotos.findIndex(p => p.id === photoId);
+                if (currentIndex >= filteredPhotos.length - 1) return;
+                
+                const currentPhoto = filteredPhotos[currentIndex];
+                const nextPhoto = filteredPhotos[currentIndex + 1];
+                
+                const tempOrder = currentPhoto.sortOrder || currentIndex;
+                const newCurrentOrder = nextPhoto.sortOrder || (currentIndex + 1);
+                
+                await updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder });
+                await updatePhotoInFirebase(nextPhoto.id, { sortOrder: tempOrder });
+                
+                const updatedPhotos = photos.map(p => {
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
+                    if (p.id === nextPhoto.id) return { ...p, sortOrder: tempOrder };
+                    return p;
+                });
+                
+                setPhotos(updatedPhotos);
             };
 
             const downloadPhoto = async (photo) => {
@@ -420,6 +466,8 @@
             const sortPhotos = (photosToSort) => {
                 const sorted = [...photosToSort];
                 switch(sortBy) {
+                    case 'custom':
+                        return sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
                     case 'date-desc':
                         return sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
                     case 'date-asc':
@@ -530,6 +578,7 @@
                                     className="flex-1 px-5 py-3 bg-gray-800 text-white border border-gray-700 focus:border-indigo-500 outline-none"
                                 />
                                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-5 py-3 bg-gray-800 text-white border border-gray-700 outline-none">
+                                    <option value="custom">Custom Order</option>
                                     <option value="date-desc">Newest First</option>
                                     <option value="date-asc">Oldest First</option>
                                     <option value="name-asc">Name (A-Z)</option>
@@ -631,6 +680,12 @@
                                     </div>
                                 )}
 
+                                {sortBy === 'custom' && (
+                                    <div className="bg-yellow-900 border border-yellow-700 p-3 mb-4 text-yellow-100 text-sm">
+                                        💡 <strong>Custom Order Mode:</strong> Use ⬆️ and ⬇️ buttons to rearrange photos in your preferred order
+                                    </div>
+                                )}
+
                                 {filteredPhotos.length === 0 ? (
                                     <div className="bg-gray-900 border border-gray-800 p-16 text-center">
                                         <div className="text-6xl mb-4">📸</div>
@@ -639,7 +694,7 @@
                                     </div>
                                 ) : view === 'grid' ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {filteredPhotos.map(photo => (
+                                        {filteredPhotos.map((photo, index) => (
                                             <div key={photo.id} className={`bg-gray-900 border border-gray-800 overflow-hidden ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
                                                 <div className="relative aspect-square">
                                                     <img src={photo.src} alt={photo.name} className="w-full h-full object-cover cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
@@ -647,12 +702,34 @@
                                                     <button onClick={() => toggleFavorite(photo.id)} className="absolute top-3 right-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
                                                         {photo.favorite ? '❤️' : '🤍'}
                                                     </button>
-                                                    <button onClick={() => downloadPhoto(photo)} className="absolute bottom-3 right-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
-                                                        ⬇️
-                                                    </button>
-                                                    <button onClick={() => deleteSinglePhoto(photo.id)} className="absolute bottom-3 left-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
-                                                        🗑️
-                                                    </button>
+                                                    {sortBy === 'custom' && (
+                                                        <div className="absolute bottom-3 left-3 flex gap-1">
+                                                            <button 
+                                                                onClick={() => movePhotoUp(photo.id)} 
+                                                                disabled={index === 0}
+                                                                className={`p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 text-white ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move up"
+                                                            >
+                                                                ⬆️
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => movePhotoDown(photo.id)} 
+                                                                disabled={index === filteredPhotos.length - 1}
+                                                                className={`p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 text-white ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move down"
+                                                            >
+                                                                ⬇️
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    <div className="absolute bottom-3 right-3 flex gap-1">
+                                                        <button onClick={() => downloadPhoto(photo)} className="p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
+                                                            ⬇️
+                                                        </button>
+                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
+                                                            🗑️
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div className="p-4">
                                                     <p className="font-semibold text-white truncate">{photo.name}</p>
@@ -668,7 +745,7 @@
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {filteredPhotos.map(photo => (
+                                        {filteredPhotos.map((photo, index) => (
                                             <div key={photo.id} className={`bg-gray-900 border border-gray-800 flex items-center p-4 ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
                                                 <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-6 h-6 mr-4 flex-shrink-0 cursor-pointer"/>
                                                 <img src={photo.src} alt={photo.name} className="w-24 h-24 object-cover cursor-pointer flex-shrink-0" onClick={() => setLightboxPhoto(photo)}/>
@@ -678,6 +755,26 @@
                                                     <p className="text-sm text-gray-500 mt-1">Album: {photo.album}</p>
                                                 </div>
                                                 <div className="flex gap-2 flex-shrink-0">
+                                                    {sortBy === 'custom' && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => movePhotoUp(photo.id)} 
+                                                                disabled={index === 0}
+                                                                className={`p-2 text-gray-400 hover:text-white ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move up"
+                                                            >
+                                                                ⬆️
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => movePhotoDown(photo.id)} 
+                                                                disabled={index === filteredPhotos.length - 1}
+                                                                className={`p-2 text-gray-400 hover:text-white ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                title="Move down"
+                                                            >
+                                                                ⬇️
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     <button onClick={() => downloadPhoto(photo)} className="p-2 text-gray-400 hover:text-white" title="Download">
                                                         ⬇️
                                                     </button>
