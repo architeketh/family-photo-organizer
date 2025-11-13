@@ -227,19 +227,22 @@
                 const currentPhoto = filteredPhotos[currentIndex];
                 const previousPhoto = filteredPhotos[currentIndex - 1];
                 
-                const tempOrder = currentPhoto.sortOrder || currentIndex;
-                const newCurrentOrder = previousPhoto.sortOrder || (currentIndex - 1);
+                const currentOrder = currentPhoto.sortOrder ?? currentIndex;
+                const previousOrder = previousPhoto.sortOrder ?? (currentIndex - 1);
                 
-                await updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder });
-                await updatePhotoInFirebase(previousPhoto.id, { sortOrder: tempOrder });
-                
+                // Optimistically update UI first
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
-                    if (p.id === previousPhoto.id) return { ...p, sortOrder: tempOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: previousOrder };
+                    if (p.id === previousPhoto.id) return { ...p, sortOrder: currentOrder };
                     return p;
                 });
-                
                 setPhotos(updatedPhotos);
+                
+                // Then save to Firebase in background
+                Promise.all([
+                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: previousOrder }),
+                    updatePhotoInFirebase(previousPhoto.id, { sortOrder: currentOrder })
+                ]).catch(err => console.error('Error saving order:', err));
             };
 
             const movePhotoDown = async (photoId) => {
@@ -249,19 +252,22 @@
                 const currentPhoto = filteredPhotos[currentIndex];
                 const nextPhoto = filteredPhotos[currentIndex + 1];
                 
-                const tempOrder = currentPhoto.sortOrder || currentIndex;
-                const newCurrentOrder = nextPhoto.sortOrder || (currentIndex + 1);
+                const currentOrder = currentPhoto.sortOrder ?? currentIndex;
+                const nextOrder = nextPhoto.sortOrder ?? (currentIndex + 1);
                 
-                await updatePhotoInFirebase(currentPhoto.id, { sortOrder: newCurrentOrder });
-                await updatePhotoInFirebase(nextPhoto.id, { sortOrder: tempOrder });
-                
+                // Optimistically update UI first
                 const updatedPhotos = photos.map(p => {
-                    if (p.id === currentPhoto.id) return { ...p, sortOrder: newCurrentOrder };
-                    if (p.id === nextPhoto.id) return { ...p, sortOrder: tempOrder };
+                    if (p.id === currentPhoto.id) return { ...p, sortOrder: nextOrder };
+                    if (p.id === nextPhoto.id) return { ...p, sortOrder: currentOrder };
                     return p;
                 });
-                
                 setPhotos(updatedPhotos);
+                
+                // Then save to Firebase in background
+                Promise.all([
+                    updatePhotoInFirebase(currentPhoto.id, { sortOrder: nextOrder }),
+                    updatePhotoInFirebase(nextPhoto.id, { sortOrder: currentOrder })
+                ]).catch(err => console.error('Error saving order:', err));
             };
 
             const downloadPhoto = async (photo) => {
@@ -723,10 +729,10 @@
                                                         </div>
                                                     )}
                                                     <div className="absolute bottom-3 right-3 flex gap-1">
-                                                        <button onClick={() => downloadPhoto(photo)} className="p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
-                                                            ⬇️
+                                                        <button onClick={() => downloadPhoto(photo)} className="p-2 bg-green-600 bg-opacity-90 hover:bg-opacity-100 text-white font-bold" title="Download">
+                                                            💾
                                                         </button>
-                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
+                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 bg-red-600 bg-opacity-90 hover:bg-opacity-100 text-white">
                                                             🗑️
                                                         </button>
                                                     </div>
@@ -775,8 +781,8 @@
                                                             </button>
                                                         </>
                                                     )}
-                                                    <button onClick={() => downloadPhoto(photo)} className="p-2 text-gray-400 hover:text-white" title="Download">
-                                                        ⬇️
+                                                    <button onClick={() => downloadPhoto(photo)} className="p-2 text-green-400 hover:text-green-300" title="Download">
+                                                        💾
                                                     </button>
                                                     <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 text-gray-400 hover:text-red-400" title="Delete">
                                                         🗑️
