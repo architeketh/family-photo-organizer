@@ -352,6 +352,11 @@
             };
 
             const deleteComment = async (photoId, commentId) => {
+                if (!verifyDeletePassword()) {
+                    alert('Incorrect password');
+                    return;
+                }
+                
                 const photo = photos.find(p => p.id === photoId);
                 if (!photo) return;
                 
@@ -362,6 +367,90 @@
                     p.id === photoId ? { ...p, comments: updatedComments } : p
                 );
                 setPhotos(updatedPhotos);
+            };
+
+            const generateCommentsPDF = () => {
+                const photosWithComments = photos.filter(p => p.comments && p.comments.length > 0);
+                
+                if (photosWithComments.length === 0) {
+                    alert('No photos with comments found');
+                    return;
+                }
+                
+                // Create HTML content for PDF
+                let htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Photo Comments Report</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                            h1 { color: #333; border-bottom: 3px solid #4F46E5; padding-bottom: 10px; }
+                            .photo-section { margin-bottom: 40px; page-break-inside: avoid; }
+                            .photo-header { background: #F3F4F6; padding: 10px; margin-bottom: 15px; border-left: 4px solid #4F46E5; }
+                            .photo-name { font-size: 18px; font-weight: bold; color: #1F2937; }
+                            .photo-details { font-size: 12px; color: #6B7280; margin-top: 5px; }
+                            .comment { background: #FFFFFF; border: 1px solid #E5E7EB; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+                            .comment-date { font-size: 11px; color: #6B7280; margin-bottom: 5px; }
+                            .comment-text { color: #1F2937; line-height: 1.5; }
+                            .report-footer { margin-top: 50px; padding-top: 20px; border-top: 2px solid #E5E7EB; text-align: center; color: #6B7280; font-size: 12px; }
+                            @media print {
+                                body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>📸 Photo Comments Report</h1>
+                        <p style="color: #6B7280; margin-bottom: 30px;">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                        <p style="margin-bottom: 30px;"><strong>Total Photos with Comments:</strong> ${photosWithComments.length}</p>
+                `;
+                
+                photosWithComments.forEach(photo => {
+                    htmlContent += `
+                        <div class="photo-section">
+                            <div class="photo-header">
+                                <div class="photo-name">${photo.name}</div>
+                                <div class="photo-details">
+                                    Album: ${photo.album} | 
+                                    Date: ${new Date(photo.date).toLocaleDateString()} | 
+                                    Comments: ${photo.comments.length}
+                                </div>
+                            </div>
+                    `;
+                    
+                    photo.comments.forEach(comment => {
+                        htmlContent += `
+                            <div class="comment">
+                                <div class="comment-date">
+                                    ${new Date(comment.date).toLocaleDateString()} at ${new Date(comment.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                                <div class="comment-text">${comment.text}</div>
+                            </div>
+                        `;
+                    });
+                    
+                    htmlContent += `</div>`;
+                });
+                
+                htmlContent += `
+                        <div class="report-footer">
+                            Family Photo Organizer - Comments Report<br>
+                            This report contains ${photosWithComments.reduce((sum, p) => sum + p.comments.length, 0)} total comments across ${photosWithComments.length} photos
+                        </div>
+                    </body>
+                    </html>
+                `;
+                
+                // Open in new window for printing/saving as PDF
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                
+                // Wait for content to load, then trigger print dialog
+                setTimeout(() => {
+                    printWindow.print();
+                }, 500);
             };
 
             const createAlbum = async () => {
@@ -601,6 +690,13 @@
                                     >
                                         <span className="text-xl">▶️</span>
                                         Slideshow
+                                    </button>
+                                    <button 
+                                        onClick={generateCommentsPDF} 
+                                        className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 font-semibold flex items-center gap-2"
+                                        title="Generate PDF report of all photos with comments"
+                                    >
+                                        📄 Comments Report
                                     </button>
                                     <button onClick={() => loadPhotosFromFirebase()} className="px-4 py-3 bg-gray-800 text-white hover:bg-gray-700">🔄</button>
                                     <button onClick={() => setView('grid')} className={`px-4 py-3 ${view === 'grid' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>Grid</button>
