@@ -719,12 +719,14 @@
                                                     <button onClick={() => toggleFavorite(photo.id)} className="absolute top-3 right-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
                                                         {photo.favorite ? '❤️' : '🤍'}
                                                     </button>
+                                                </div>
+                                                <div className="p-2 flex items-center justify-between gap-2">
                                                     {sortBy === 'custom' && (
-                                                        <div className="absolute bottom-3 left-3 flex gap-1">
+                                                        <div className="flex gap-1">
                                                             <button 
                                                                 onClick={() => movePhotoUp(photo.id)} 
                                                                 disabled={index === 0}
-                                                                className={`p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 text-white ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-sm ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move up"
                                                             >
                                                                 ⬆️
@@ -732,30 +734,26 @@
                                                             <button 
                                                                 onClick={() => movePhotoDown(photo.id)} 
                                                                 disabled={index === filteredPhotos.length - 1}
-                                                                className={`p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 text-white ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-sm ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move down"
                                                             >
                                                                 ⬇️
                                                             </button>
                                                         </div>
                                                     )}
-                                                    <div className="absolute bottom-3 right-3 flex gap-1">
-                                                        <button onClick={() => downloadPhoto(photo)} className="p-2 bg-green-600 bg-opacity-90 hover:bg-opacity-100 text-white font-bold" title="Download">
-                                                            💾
-                                                        </button>
-                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 bg-red-600 bg-opacity-90 hover:bg-opacity-100 text-white">
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div className="p-4">
-                                                    <p className="font-semibold text-white truncate">{photo.name}</p>
-                                                    <p className="text-sm text-gray-400 mt-1">{new Date(photo.date).toLocaleDateString()}</p>
-                                                    <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="w-full mt-3 px-3 py-2 text-sm bg-gray-800 text-white border border-gray-700 outline-none">
+                                                    <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="flex-1 px-2 py-1 text-xs bg-gray-800 text-white border border-gray-700 outline-none">
                                                         {albums.map(album => (
                                                             <option key={album} value={album}>{album}</option>
                                                         ))}
                                                     </select>
+                                                    <div className="flex gap-1">
+                                                        <button onClick={() => downloadPhoto(photo)} className="p-1 bg-green-600 hover:bg-green-700 text-white text-sm" title="Download">
+                                                            💾
+                                                        </button>
+                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-1 bg-red-600 hover:bg-red-700 text-white text-sm" title="Delete">
+                                                            🗑️
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
