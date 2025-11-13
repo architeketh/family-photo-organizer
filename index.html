@@ -57,6 +57,8 @@
             const [selectedPhotos, setSelectedPhotos] = useState(new Set());
             const [debugInfo, setDebugInfo] = useState('');
             const [lightboxPhoto, setLightboxPhoto] = useState(null);
+            const [showComments, setShowComments] = useState(null);
+            const [newComment, setNewComment] = useState('');
             const [slideshowActive, setSlideshowActive] = useState(false);
             const [slideshowIndex, setSlideshowIndex] = useState(0);
             const [slideshowPhotos, setSlideshowPhotos] = useState([]);
@@ -325,6 +327,41 @@
                     );
                     setPhotos(updatedPhotos);
                 }
+            };
+
+            const addComment = async (photoId) => {
+                if (!newComment.trim()) return;
+                
+                const photo = photos.find(p => p.id === photoId);
+                if (!photo) return;
+                
+                const comment = {
+                    text: newComment.trim(),
+                    date: new Date().toISOString(),
+                    id: Date.now()
+                };
+                
+                const updatedComments = [...(photo.comments || []), comment];
+                await updatePhotoInFirebase(photoId, { comments: updatedComments });
+                
+                const updatedPhotos = photos.map(p => 
+                    p.id === photoId ? { ...p, comments: updatedComments } : p
+                );
+                setPhotos(updatedPhotos);
+                setNewComment('');
+            };
+
+            const deleteComment = async (photoId, commentId) => {
+                const photo = photos.find(p => p.id === photoId);
+                if (!photo) return;
+                
+                const updatedComments = (photo.comments || []).filter(c => c.id !== commentId);
+                await updatePhotoInFirebase(photoId, { comments: updatedComments });
+                
+                const updatedPhotos = photos.map(p => 
+                    p.id === photoId ? { ...p, comments: updatedComments } : p
+                );
+                setPhotos(updatedPhotos);
             };
 
             const createAlbum = async () => {
@@ -752,6 +789,18 @@
                                                         ))}
                                                     </select>
                                                     <div className="flex gap-1">
+                                                        <button 
+                                                            onClick={() => setShowComments(showComments === photo.id ? null : photo.id)} 
+                                                            className={`p-1 ${showComments === photo.id ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'} text-white text-xs relative`} 
+                                                            title="Comments"
+                                                        >
+                                                            💬
+                                                            {photo.comments && photo.comments.length > 0 && (
+                                                                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                                                                    {photo.comments.length}
+                                                                </span>
+                                                            )}
+                                                        </button>
                                                         <button onClick={() => downloadPhoto(photo)} className="p-1 bg-green-600 hover:bg-green-700 text-white text-sm" title="Download">
                                                             💾
                                                         </button>
@@ -760,6 +809,56 @@
                                                         </button>
                                                     </div>
                                                 </div>
+                                                
+                                                {/* Comments Section */}
+                                                {showComments === photo.id && (
+                                                    <div className="p-3 bg-gray-800 border-t border-gray-700">
+                                                        <h4 className="text-white font-semibold mb-2 text-sm">Comments</h4>
+                                                        
+                                                        {/* Existing Comments */}
+                                                        <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
+                                                            {photo.comments && photo.comments.length > 0 ? (
+                                                                photo.comments.map(comment => (
+                                                                    <div key={comment.id} className="bg-gray-900 p-2 rounded text-xs">
+                                                                        <div className="flex justify-between items-start mb-1">
+                                                                            <span className="text-gray-400 text-xs">
+                                                                                {new Date(comment.date).toLocaleDateString()} {new Date(comment.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                            </span>
+                                                                            <button 
+                                                                                onClick={() => deleteComment(photo.id, comment.id)} 
+                                                                                className="text-red-400 hover:text-red-300"
+                                                                                title="Delete comment"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                        <p className="text-white text-sm">{comment.text}</p>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <p className="text-gray-500 text-xs italic">No comments yet</p>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Add Comment */}
+                                                        <div className="flex gap-2">
+                                                            <input 
+                                                                type="text" 
+                                                                value={showComments === photo.id ? newComment : ''} 
+                                                                onChange={(e) => setNewComment(e.target.value)}
+                                                                placeholder="Add a comment..." 
+                                                                className="flex-1 px-2 py-1 text-xs bg-gray-900 text-white border border-gray-700 outline-none"
+                                                                onKeyPress={(e) => e.key === 'Enter' && addComment(photo.id)}
+                                                            />
+                                                            <button 
+                                                                onClick={() => addComment(photo.id)} 
+                                                                className="px-3 py-1 bg-blue-600 text-white text-xs hover:bg-blue-700"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
