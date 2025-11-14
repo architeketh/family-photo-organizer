@@ -822,10 +822,10 @@
                         <div className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4" onClick={() => setLightboxPhoto(null)}>
                             <button onClick={() => setLightboxPhoto(null)} className="absolute top-4 right-4 text-white text-3xl hover:text-gray-300">✕</button>
                             <div className="absolute top-4 left-4 flex gap-2">
-                                <button onClick={() => downloadPhoto(lightboxPhoto)} className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700">
+                                <button onClick={() => downloadPhoto(lightboxPhoto)} className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg">
                                     Download
                                 </button>
-                                <button onClick={() => { deleteSinglePhoto(lightboxPhoto.id); setLightboxPhoto(null); }} className="px-4 py-2 bg-red-600 text-white hover:bg-red-700">
+                                <button onClick={() => { deleteSinglePhoto(lightboxPhoto.id); setLightboxPhoto(null); }} className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg">
                                     Delete
                                 </button>
                             </div>
@@ -858,39 +858,39 @@
                                 <div className="flex gap-2 flex-wrap">
                                     <button 
                                         onClick={startSlideshowWithAll} 
-                                        className="px-6 py-3 bg-green-600 text-white hover:bg-green-700 font-semibold flex items-center gap-2"
+                                        className="px-6 py-3 bg-green-600 text-white hover:bg-green-700 font-semibold flex items-center gap-2 rounded-lg transition-all"
                                     >
                                         <span className="text-xl">▶️</span>
                                         Slideshow
                                     </button>
                                     <button 
                                         onClick={generateCommentsPDF} 
-                                        className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 font-semibold flex items-center gap-2"
+                                        className="px-6 py-3 bg-purple-600 text-white hover:bg-purple-700 font-semibold flex items-center gap-2 rounded-lg transition-all"
                                         title="Generate photo album with memories"
                                     >
                                         📖 Memories
                                     </button>
                                     <button 
                                         onClick={printAlbum} 
-                                        className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 font-semibold flex items-center gap-2"
+                                        className="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 font-semibold flex items-center gap-2 rounded-lg transition-all"
                                         title="Print current album"
                                     >
                                         🖨️ Print Album
                                     </button>
-                                    <button onClick={() => loadPhotosFromFirebase()} className="px-4 py-3 bg-gray-800 text-white hover:bg-gray-700">🔄</button>
-                                    <button onClick={() => setView('grid')} className={`px-4 py-3 ${view === 'grid' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>Grid</button>
-                                    <button onClick={() => setView('list')} className={`px-4 py-3 ${view === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>List</button>
+                                    <button onClick={() => loadPhotosFromFirebase()} className="px-4 py-3 bg-gray-800 text-white hover:bg-gray-700 rounded-lg transition-all">🔄</button>
+                                    <button onClick={() => setView('grid')} className={`px-4 py-3 rounded-lg transition-all ${view === 'grid' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>Grid</button>
+                                    <button onClick={() => setView('list')} className={`px-4 py-3 rounded-lg transition-all ${view === 'list' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'}`}>List</button>
                                 </div>
                             </div>
 
                             {debugInfo && (
-                                <div className="mb-4 p-4 bg-blue-900 text-blue-100 border border-blue-700">
+                                <div className="mb-4 p-4 bg-blue-900 text-blue-100 border border-blue-700 rounded-lg">
                                     <span className="font-semibold">{debugInfo}</span> {uploading && `(${uploadProgress}%)`}
                                 </div>
                             )}
 
                             <div className="flex flex-col md:flex-row gap-3">
-                                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-5 py-3 bg-gray-800 text-white border border-gray-700 outline-none">
+                                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-5 py-3 bg-gray-800 text-white border border-gray-700 outline-none rounded-lg">
                                     <option value="custom">Custom Order</option>
                                     <option value="date-desc">Newest First</option>
                                     <option value="date-asc">Oldest First</option>
@@ -898,7 +898,7 @@
                                     <option value="name-desc">Name (Z-A)</option>
                                     <option value="album">By Album</option>
                                 </select>
-                                <label className={`flex-1 px-6 py-3 ${uploading ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white cursor-pointer text-center whitespace-nowrap font-semibold`}>
+                                <label className={`flex-1 px-6 py-3 ${uploading ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white cursor-pointer text-center whitespace-nowrap font-semibold rounded-lg transition-all`}>
                                     {uploading ? `Uploading ${uploadProgress}%...` : 'Upload Photos'}
                                     <input type="file" multiple accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading}/>
                                 </label>
@@ -907,20 +907,20 @@
                     </div>
 
                     <div className="max-w-7xl mx-auto px-4 py-6">
-                        <div className="bg-gray-900 border border-gray-800 p-4 mb-6">
+                        <div className="bg-gray-900 border border-gray-800 p-4 mb-6 rounded-xl">
                             <div className="flex flex-wrap items-center gap-2">
                                 <h3 className="text-sm font-bold text-gray-400 uppercase mr-2">Albums:</h3>
                                 
                                 <button 
                                     onClick={() => setSelectedAlbum('All Photos')} 
-                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm ${selectedAlbum === 'All Photos' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm rounded-lg transition-all ${selectedAlbum === 'All Photos' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                                 >
                                     All Photos ({photos.length})
                                 </button>
                                 
                                 <button 
                                     onClick={() => setSelectedAlbum('Favorites')} 
-                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm ${selectedAlbum === 'Favorites' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm rounded-lg transition-all ${selectedAlbum === 'Favorites' ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                                 >
                                     ❤️ Favorites ({photos.filter(p => p.favorite).length})
                                 </button>
@@ -935,17 +935,17 @@
                                                     type="text" 
                                                     value={editAlbumName} 
                                                     onChange={(e) => setEditAlbumName(e.target.value)} 
-                                                    className="px-2 py-1 text-sm bg-gray-800 text-white border border-gray-700 w-32"
+                                                    className="px-2 py-1 text-sm bg-gray-800 text-white border border-gray-700 w-32 rounded-md"
                                                     onKeyPress={(e) => e.key === 'Enter' && saveAlbumRename()}
                                                 />
-                                                <button onClick={saveAlbumRename} className="px-2 py-1 bg-green-600 text-white text-xs">✓</button>
-                                                <button onClick={() => setEditingAlbum(null)} className="px-2 py-1 bg-gray-600 text-white text-xs">✕</button>
+                                                <button onClick={saveAlbumRename} className="px-2 py-1 bg-green-600 text-white text-xs rounded-md">✓</button>
+                                                <button onClick={() => setEditingAlbum(null)} className="px-2 py-1 bg-gray-600 text-white text-xs rounded-md">✕</button>
                                             </div>
                                         ) : (
                                             <>
                                                 <button 
                                                     onClick={() => setSelectedAlbum(album)} 
-                                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm ${selectedAlbum === album ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                                                    className={`px-3 py-1.5 whitespace-nowrap font-medium text-sm rounded-lg transition-all ${selectedAlbum === album ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
                                                 >
                                                     {album} ({photos.filter(p => p.album === album).length})
                                                 </button>
@@ -977,16 +977,16 @@
                                             value={newAlbumName} 
                                             onChange={(e) => setNewAlbumName(e.target.value)} 
                                             placeholder="Album name" 
-                                            className="px-2 py-1 text-sm bg-gray-800 text-white border border-gray-700 outline-none w-32"
+                                            className="px-2 py-1 text-sm bg-gray-800 text-white border border-gray-700 outline-none w-32 rounded-md"
                                             onKeyPress={(e) => e.key === 'Enter' && createAlbum()}
                                         />
-                                        <button onClick={createAlbum} className="px-2 py-1 bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Add</button>
-                                        <button onClick={() => setShowNewAlbum(false)} className="px-2 py-1 bg-gray-600 text-white text-sm hover:bg-gray-700">Cancel</button>
+                                        <button onClick={createAlbum} className="px-2 py-1 bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 rounded-md">Add</button>
+                                        <button onClick={() => setShowNewAlbum(false)} className="px-2 py-1 bg-gray-600 text-white text-sm hover:bg-gray-700 rounded-md">Cancel</button>
                                     </div>
                                 ) : (
                                     <button 
                                         onClick={() => setShowNewAlbum(true)} 
-                                        className="px-3 py-1.5 bg-gray-800 text-indigo-400 hover:bg-gray-700 font-semibold text-sm"
+                                        className="px-3 py-1.5 bg-gray-800 text-indigo-400 hover:bg-gray-700 font-semibold text-sm rounded-lg transition-all"
                                     >
                                         + New Album
                                     </button>
@@ -997,19 +997,19 @@
                         <div className="flex flex-col lg:flex-row gap-6">
                             <div className="flex-1">
                                 {selectedPhotos.size > 0 && (
-                                    <div className="bg-gray-900 border border-gray-800 p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                                    <div className="bg-gray-900 border border-gray-800 p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-xl">
                                         <span className="text-gray-300 font-semibold">{selectedPhotos.size} selected</span>
                                         <div className="flex flex-wrap gap-2">
-                                            <button onClick={startSlideshow} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 text-sm font-semibold">
+                                            <button onClick={startSlideshow} className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 text-sm font-semibold rounded-lg transition-all">
                                                 Slideshow
                                             </button>
-                                            <button onClick={printSelected} className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold">
+                                            <button onClick={printSelected} className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold rounded-lg transition-all">
                                                 Print Selected
                                             </button>
-                                            <button onClick={downloadSelected} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold">
+                                            <button onClick={downloadSelected} className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 text-sm font-semibold rounded-lg transition-all">
                                                 Download
                                             </button>
-                                            <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-semibold">
+                                            <button onClick={deleteSelected} className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 text-sm font-semibold rounded-lg transition-all">
                                                 Delete
                                             </button>
                                         </div>
@@ -1017,13 +1017,13 @@
                                 )}
 
                                 {sortBy === 'custom' && (
-                                    <div className="bg-yellow-900 border border-yellow-700 p-3 mb-4 text-yellow-100 text-sm">
+                                    <div className="bg-yellow-900 border border-yellow-700 p-3 mb-4 text-yellow-100 text-sm rounded-lg">
                                         💡 <strong>Custom Order Mode:</strong> Use ⏫ Top and ⏬ Bottom buttons to move photos to the beginning or end of the list
                                     </div>
                                 )}
 
                                 {filteredPhotos.length === 0 ? (
-                                    <div className="bg-gray-900 border border-gray-800 p-16 text-center">
+                                    <div className="bg-gray-900 border border-gray-800 p-16 text-center rounded-xl">
                                         <div className="text-6xl mb-4">📸</div>
                                         <h3 className="text-2xl font-bold text-white mb-2">No photos yet</h3>
                                         <p className="text-gray-400 text-lg">Upload your first memories to get started!</p>
@@ -1031,11 +1031,11 @@
                                 ) : view === 'grid' ? (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {filteredPhotos.map((photo, index) => (
-                                            <div key={photo.id} className={`bg-gray-900 border border-gray-800 overflow-hidden ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
+                                            <div key={photo.id} className={`bg-gray-900 border border-gray-800 overflow-hidden rounded-xl ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
                                                 <div className="relative aspect-square">
                                                     <img src={photo.src} alt={photo.name} className="w-full h-full object-cover cursor-pointer" onClick={() => setLightboxPhoto(photo)}/>
-                                                    <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="absolute top-3 left-3 w-6 h-6 cursor-pointer"/>
-                                                    <button onClick={() => toggleFavorite(photo.id)} className="absolute top-3 right-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100">
+                                                    <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="absolute top-3 left-3 w-6 h-6 cursor-pointer rounded"/>
+                                                    <button onClick={() => toggleFavorite(photo.id)} className="absolute top-3 right-3 p-2 bg-gray-900 bg-opacity-80 hover:bg-opacity-100 rounded-lg">
                                                         {photo.favorite ? '❤️' : '🤍'}
                                                     </button>
                                                 </div>
@@ -1045,7 +1045,7 @@
                                                             <button 
                                                                 onClick={() => movePhotoToTop(photo.id)} 
                                                                 disabled={index === 0}
-                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs rounded-md ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move to top"
                                                             >
                                                                 ⏫ Top
@@ -1053,14 +1053,14 @@
                                                             <button 
                                                                 onClick={() => movePhotoToBottom(photo.id)} 
                                                                 disabled={index === filteredPhotos.length - 1}
-                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-1 bg-gray-800 hover:bg-gray-700 text-white text-xs rounded-md ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move to bottom"
                                                             >
                                                                 ⏬ Bottom
                                                             </button>
                                                         </div>
                                                     )}
-                                                    <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="flex-1 px-2 py-1 text-xs bg-gray-800 text-white border border-gray-700 outline-none">
+                                                    <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="flex-1 px-2 py-1 text-xs bg-gray-800 text-white border border-gray-700 outline-none rounded-md">
                                                         {albums.map(album => (
                                                             <option key={album} value={album}>{album}</option>
                                                         ))}
@@ -1068,7 +1068,7 @@
                                                     <div className="flex gap-1">
                                                         <button 
                                                             onClick={() => setShowComments(showComments === photo.id ? null : photo.id)} 
-                                                            className={`p-1 ${showComments === photo.id ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'} text-white text-xs relative`} 
+                                                            className={`p-1 ${showComments === photo.id ? 'bg-blue-600' : 'bg-gray-800 hover:bg-gray-700'} text-white text-xs relative rounded-md`} 
                                                             title="Memories"
                                                         >
                                                             💭
@@ -1078,10 +1078,10 @@
                                                                 </span>
                                                             )}
                                                         </button>
-                                                        <button onClick={() => downloadPhoto(photo)} className="p-1 bg-green-600 hover:bg-green-700 text-white text-sm" title="Download">
+                                                        <button onClick={() => downloadPhoto(photo)} className="p-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md" title="Download">
                                                             💾
                                                         </button>
-                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-1 bg-red-600 hover:bg-red-700 text-white text-sm" title="Delete">
+                                                        <button onClick={() => deleteSinglePhoto(photo.id)} className="p-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md" title="Delete">
                                                             🗑️
                                                         </button>
                                                     </div>
@@ -1094,7 +1094,7 @@
                                                         <div className="space-y-2 mb-3 max-h-40 overflow-y-auto">
                                                             {photo.comments && photo.comments.length > 0 ? (
                                                                 photo.comments.map(comment => (
-                                                                    <div key={comment.id} className="bg-gray-900 p-2 rounded text-xs">
+                                                                    <div key={comment.id} className="bg-gray-900 p-2 rounded-lg text-xs">
                                                                         <div className="flex justify-between items-start mb-1">
                                                                             <span className="text-gray-400 text-xs">
                                                                                 {new Date(comment.date).toLocaleDateString()} {new Date(comment.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -1121,12 +1121,12 @@
                                                                 value={showComments === photo.id ? newComment : ''} 
                                                                 onChange={(e) => setNewComment(e.target.value)}
                                                                 placeholder="Add a memory..." 
-                                                                className="flex-1 px-2 py-1 text-xs bg-gray-900 text-white border border-gray-700 outline-none"
+                                                                className="flex-1 px-2 py-1 text-xs bg-gray-900 text-white border border-gray-700 outline-none rounded-md"
                                                                 onKeyPress={(e) => e.key === 'Enter' && addComment(photo.id)}
                                                             />
                                                             <button 
                                                                 onClick={() => addComment(photo.id)} 
-                                                                className="px-3 py-1 bg-blue-600 text-white text-xs hover:bg-blue-700"
+                                                                className="px-3 py-1 bg-blue-600 text-white text-xs hover:bg-blue-700 rounded-md"
                                                             >
                                                                 Add
                                                             </button>
@@ -1139,9 +1139,9 @@
                                 ) : (
                                     <div className="space-y-4">
                                         {filteredPhotos.map((photo, index) => (
-                                            <div key={photo.id} className={`bg-gray-900 border border-gray-800 flex items-center p-4 ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
-                                                <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-6 h-6 mr-4 flex-shrink-0 cursor-pointer"/>
-                                                <img src={photo.src} alt={photo.name} className="w-24 h-24 object-cover cursor-pointer flex-shrink-0" onClick={() => setLightboxPhoto(photo)}/>
+                                            <div key={photo.id} className={`bg-gray-900 border border-gray-800 flex items-center p-4 rounded-xl ${selectedPhotos.has(photo.id) ? 'ring-4 ring-indigo-500' : ''}`}>
+                                                <input type="checkbox" checked={selectedPhotos.has(photo.id)} onChange={() => togglePhotoSelection(photo.id)} className="w-6 h-6 mr-4 flex-shrink-0 cursor-pointer rounded"/>
+                                                <img src={photo.src} alt={photo.name} className="w-24 h-24 object-cover cursor-pointer flex-shrink-0 rounded-lg" onClick={() => setLightboxPhoto(photo)}/>
                                                 <div className="flex-1 ml-4 min-w-0">
                                                     <p className="font-semibold text-white truncate text-lg">{photo.name}</p>
                                                     <p className="text-sm text-gray-400">{new Date(photo.date).toLocaleDateString()}</p>
@@ -1153,7 +1153,7 @@
                                                             <button 
                                                                 onClick={() => movePhotoToTop(photo.id)} 
                                                                 disabled={index === 0}
-                                                                className={`p-2 text-gray-400 hover:text-white text-xs ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-2 text-gray-400 hover:text-white text-xs rounded-lg ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move to top"
                                                             >
                                                                 ⏫
@@ -1161,20 +1161,20 @@
                                                             <button 
                                                                 onClick={() => movePhotoToBottom(photo.id)} 
                                                                 disabled={index === filteredPhotos.length - 1}
-                                                                className={`p-2 text-gray-400 hover:text-white text-xs ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
+                                                                className={`p-2 text-gray-400 hover:text-white text-xs rounded-lg ${index === filteredPhotos.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                                 title="Move to bottom"
                                                             >
                                                                 ⏬
                                                             </button>
                                                         </>
                                                     )}
-                                                    <button onClick={() => downloadPhoto(photo)} className="p-2 text-green-400 hover:text-green-300" title="Download">
+                                                    <button onClick={() => downloadPhoto(photo)} className="p-2 text-green-400 hover:text-green-300 rounded-lg" title="Download">
                                                         💾
                                                     </button>
-                                                    <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 text-gray-400 hover:text-red-400" title="Delete">
+                                                    <button onClick={() => deleteSinglePhoto(photo.id)} className="p-2 text-gray-400 hover:text-red-400 rounded-lg" title="Delete">
                                                         🗑️
                                                     </button>
-                                                    <button onClick={() => toggleFavorite(photo.id)} className="p-2 text-gray-400 hover:text-white">
+                                                    <button onClick={() => toggleFavorite(photo.id)} className="p-2 text-gray-400 hover:text-white rounded-lg">
                                                         {photo.favorite ? '❤️' : '🤍'}
                                                     </button>
                                                 </div>
