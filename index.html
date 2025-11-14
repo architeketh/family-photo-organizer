@@ -387,7 +387,7 @@
                     photosByAlbum[album].push(photo);
                 });
                 
-                // Create HTML content for photo album style PDF
+                // Create HTML content for modern photo album style PDF
                 let htmlContent = `
                     <!DOCTYPE html>
                     <html>
@@ -397,98 +397,89 @@
                         <style>
                             @page { 
                                 size: letter portrait; 
-                                margin: 0.4in; 
+                                margin: 0.3in; 
                             }
                             body { 
-                                font-family: 'Georgia', 'Palatino', serif; 
-                                background: linear-gradient(to bottom, #fdfbf7 0%, #f5f1e8 100%);
-                                padding: 15px; 
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+                                background: #ffffff;
+                                padding: 10px; 
                                 margin: 0; 
-                                color: #4a3828;
+                                color: #1a1a1a;
                             }
                             .album-cover { 
                                 text-align: center; 
-                                padding: 40px 20px;
-                                border: 3px double #b8936d;
-                                background: #fefefe;
-                                margin-bottom: 30px;
-                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                padding: 50px 20px;
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                margin-bottom: 20px;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                                 page-break-after: always;
                             }
                             .album-cover h1 { 
-                                font-size: 36px; 
-                                margin: 0 0 15px 0; 
-                                color: #6b5744;
-                                font-family: 'Brush Script MT', cursive;
-                                text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+                                font-size: 42px; 
+                                margin: 0 0 10px 0; 
+                                color: #ffffff;
+                                font-weight: 700;
+                                letter-spacing: -0.5px;
+                            }
+                            .album-cover .subtitle {
+                                font-size: 18px;
+                                color: rgba(255,255,255,0.9);
+                                margin: 15px 0;
+                                font-weight: 400;
                             }
                             .album-cover .date { 
-                                font-size: 16px; 
-                                color: #8b7355;
-                                font-style: italic;
-                                margin-top: 20px;
+                                font-size: 14px; 
+                                color: rgba(255,255,255,0.8);
+                                margin-top: 25px;
+                                font-weight: 400;
                             }
                             .album-cover .stats {
-                                margin-top: 30px;
+                                margin-top: 25px;
                                 font-size: 14px;
-                                color: #a08968;
+                                color: rgba(255,255,255,0.85);
+                                font-weight: 400;
                             }
                             .album-section { 
-                                margin-bottom: 35px; 
+                                margin-bottom: 25px; 
                                 page-break-inside: avoid;
-                                background: white;
-                                padding: 20px;
-                                border: 2px solid #d4c4a8;
-                                box-shadow: 0 2px 4px rgba(0,0,0,0.08);
                             }
                             .album-title { 
-                                font-size: 24px; 
-                                font-weight: bold; 
-                                color: #6b5744;
-                                border-bottom: 2px solid #b8936d;
-                                padding-bottom: 8px;
-                                margin-bottom: 20px;
-                                font-family: 'Georgia', serif;
+                                font-size: 22px; 
+                                font-weight: 700; 
+                                color: #667eea;
+                                padding-bottom: 10px;
+                                margin-bottom: 15px;
+                                border-bottom: 3px solid #667eea;
                                 display: flex;
                                 align-items: center;
-                                gap: 10px;
+                                gap: 8px;
                             }
                             .album-title::before {
                                 content: '📸';
-                                font-size: 22px;
+                                font-size: 20px;
                             }
-                            .photo-page { 
+                            .photo-grid { 
                                 display: grid; 
-                                grid-template-columns: repeat(2, 1fr); 
-                                gap: 20px;
-                                margin-bottom: 20px;
+                                grid-template-columns: repeat(5, 1fr); 
+                                gap: 10px;
+                                margin-bottom: 15px;
                             }
-                            .photo-frame { 
-                                break-inside: avoid; 
-                                background: white;
-                                padding: 12px;
-                                border: 4px solid #e8dcc8;
-                                box-shadow: 
-                                    0 2px 4px rgba(0,0,0,0.1),
-                                    inset 0 0 0 1px #f5f0e5,
-                                    inset 0 0 0 8px #faf8f3;
-                                position: relative;
-                            }
-                            .photo-frame::after {
-                                content: '';
-                                position: absolute;
-                                top: 8px;
-                                left: 8px;
-                                right: 8px;
-                                bottom: 8px;
-                                border: 1px solid #d4c4a8;
-                                pointer-events: none;
+                            .photo-card { 
+                                break-inside: avoid;
+                                page-break-inside: avoid;
+                                background: #ffffff;
+                                border: 1px solid #e5e5e5;
+                                border-radius: 6px;
+                                overflow: hidden;
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+                                transition: transform 0.2s;
                             }
                             .photo-container {
                                 position: relative;
                                 width: 100%;
-                                padding-bottom: 75%;
-                                background: #fafafa;
+                                padding-bottom: 100%;
+                                background: #f5f5f5;
                                 overflow: hidden;
                             }
                             .photo-img { 
@@ -501,94 +492,63 @@
                                 display: block;
                             }
                             .photo-caption { 
-                                margin-top: 12px;
-                                padding-top: 10px;
-                                border-top: 1px solid #e8dcc8;
+                                padding: 8px;
                             }
                             .photo-name { 
-                                font-size: 11px; 
-                                font-weight: bold; 
-                                margin-bottom: 8px;
-                                color: #6b5744;
-                                font-style: italic;
+                                font-size: 8px; 
+                                font-weight: 600; 
+                                margin-bottom: 6px;
+                                color: #333;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
                             }
                             .memory { 
-                                background: #fffef9;
-                                padding: 8px;
-                                margin: 6px 0;
-                                border-left: 3px solid #d4b896;
-                                font-size: 9px;
-                                line-height: 1.4;
-                                font-family: 'Georgia', serif;
+                                background: #f8f9fa;
+                                padding: 6px;
+                                margin: 4px 0;
+                                border-radius: 4px;
+                                border-left: 2px solid #667eea;
+                                font-size: 7px;
+                                line-height: 1.3;
                             }
                             .memory-date { 
-                                color: #a08968;
-                                font-size: 7px;
-                                margin-bottom: 4px;
-                                font-style: italic;
+                                color: #666;
+                                font-size: 6px;
+                                margin-bottom: 3px;
+                                font-weight: 500;
                             }
                             .memory-text { 
-                                color: #5a4a3a;
-                                font-size: 9px;
-                            }
-                            .decorative-corner {
-                                position: absolute;
-                                width: 20px;
-                                height: 20px;
-                                border: 2px solid #d4c4a8;
-                            }
-                            .decorative-corner.top-left {
-                                top: 4px;
-                                left: 4px;
-                                border-right: none;
-                                border-bottom: none;
-                            }
-                            .decorative-corner.top-right {
-                                top: 4px;
-                                right: 4px;
-                                border-left: none;
-                                border-bottom: none;
-                            }
-                            .decorative-corner.bottom-left {
-                                bottom: 4px;
-                                left: 4px;
-                                border-right: none;
-                                border-top: none;
-                            }
-                            .decorative-corner.bottom-right {
-                                bottom: 4px;
-                                right: 4px;
-                                border-left: none;
-                                border-top: none;
+                                color: #333;
+                                font-size: 7px;
+                                line-height: 1.3;
+                                word-wrap: break-word;
                             }
                             @media print {
                                 body { 
                                     print-color-adjust: exact; 
                                     -webkit-print-color-adjust: exact; 
                                 }
-                                .photo-page { 
-                                    page-break-inside: auto; 
-                                }
-                                .photo-frame { 
+                                .album-section { 
                                     page-break-inside: avoid; 
+                                }
+                                .photo-card { 
+                                    page-break-inside: avoid;
+                                    break-inside: avoid;
                                 }
                             }
                         </style>
                     </head>
                     <body>
                         <div class="album-cover">
-                            <div class="decorative-corner top-left"></div>
-                            <div class="decorative-corner top-right"></div>
                             <h1>✨ Family Memories ✨</h1>
-                            <div style="font-size: 18px; color: #8b7355; margin: 20px 0;">A Collection of Cherished Moments</div>
+                            <div class="subtitle">A Collection of Family Memories</div>
                             <div class="date">Created ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
                             <div class="stats">
-                                ${photosWithComments.length} precious ${photosWithComments.length === 1 ? 'memory' : 'memories'} • 
-                                ${photosWithComments.reduce((sum, p) => sum + p.comments.length, 0)} heartfelt ${photosWithComments.reduce((sum, p) => sum + p.comments.length, 0) === 1 ? 'note' : 'notes'} • 
+                                ${photosWithComments.length} ${photosWithComments.length === 1 ? 'photo' : 'photos'} • 
+                                ${photosWithComments.reduce((sum, p) => sum + p.comments.length, 0)} things we remember • 
                                 ${Object.keys(photosByAlbum).length} ${Object.keys(photosByAlbum).length === 1 ? 'album' : 'albums'}
                             </div>
-                            <div class="decorative-corner bottom-left"></div>
-                            <div class="decorative-corner bottom-right"></div>
                         </div>
                 `;
                 
@@ -598,12 +558,12 @@
                     htmlContent += `
                         <div class="album-section">
                             <div class="album-title">${albumName}</div>
-                            <div class="photo-page">
+                            <div class="photo-grid">
                     `;
                     
                     albumPhotos.forEach(photo => {
                         htmlContent += `
-                            <div class="photo-frame">
+                            <div class="photo-card">
                                 <div class="photo-container">
                                     <img src="${photo.src}" class="photo-img" alt="${photo.name}">
                                 </div>
@@ -615,8 +575,8 @@
                             const commentDate = new Date(comment.date);
                             htmlContent += `
                                 <div class="memory">
-                                    <div class="memory-date">${commentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${commentDate.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'})}</div>
-                                    <div class="memory-text">"${comment.text}"</div>
+                                    <div class="memory-date">${commentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${commentDate.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'})}</div>
+                                    <div class="memory-text">${comment.text}</div>
                                 </div>
                             `;
                         });
