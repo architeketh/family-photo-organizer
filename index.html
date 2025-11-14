@@ -387,7 +387,7 @@
                     photosByAlbum[album].push(photo);
                 });
                 
-                // Create HTML content for Facebook memories style PDF
+                // Create HTML content for photo album style PDF with black theme
                 let htmlContent = `
                     <!DOCTYPE html>
                     <html>
@@ -397,11 +397,11 @@
                         <style>
                             @page { 
                                 size: letter portrait; 
-                                margin: 0.4in; 
+                                margin: 0.3in; 
                             }
                             body { 
                                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; 
-                                background: #f0f2f5;
+                                background: #f5f5f5;
                                 padding: 0; 
                                 margin: 0; 
                                 color: #1c1e21;
@@ -439,88 +439,77 @@
                                 font-weight: 400;
                             }
                             .album-section { 
-                                margin-bottom: 30px; 
+                                margin-bottom: 25px; 
                                 page-break-inside: avoid;
                             }
                             .album-title { 
-                                font-size: 24px; 
+                                font-size: 22px; 
                                 font-weight: 700; 
-                                color: #1c1e21;
-                                padding: 12px 16px;
+                                color: #000;
+                                padding: 10px 0;
                                 margin-bottom: 15px;
-                                background: #ffffff;
-                                border-radius: 8px;
-                                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                                border-bottom: 3px solid #000;
                             }
-                            .memory-feed { 
-                                display: flex;
-                                flex-direction: column;
-                                gap: 15px;
+                            .photo-grid { 
+                                display: grid; 
+                                grid-template-columns: repeat(5, 1fr); 
+                                gap: 12px;
+                                margin-bottom: 15px;
                             }
-                            .memory-post { 
+                            .photo-frame { 
                                 break-inside: avoid;
                                 page-break-inside: avoid;
                                 background: #ffffff;
-                                border-radius: 8px;
-                                overflow: hidden;
-                                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-                            }
-                            .post-header {
-                                padding: 12px 16px;
-                                border-bottom: 1px solid #e4e6eb;
-                            }
-                            .post-photo-name { 
-                                font-size: 15px; 
-                                font-weight: 600; 
-                                color: #1c1e21;
-                                margin-bottom: 4px;
-                            }
-                            .post-album {
-                                font-size: 13px;
-                                color: #65676b;
+                                padding: 12px;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                             }
                             .photo-container {
                                 position: relative;
                                 width: 100%;
-                                background: #f0f2f5;
+                                padding-bottom: 100%;
+                                background: #f0f0f0;
                                 overflow: hidden;
+                                margin-bottom: 8px;
                             }
                             .photo-img { 
+                                position: absolute;
+                                top: 0;
+                                left: 0;
                                 width: 100%; 
-                                height: auto;
-                                display: block;
-                                max-height: 400px;
+                                height: 100%;
                                 object-fit: contain;
+                                display: block;
                             }
-                            .post-footer {
-                                padding: 12px 16px;
+                            .photo-name { 
+                                font-size: 8px; 
+                                font-weight: 600; 
+                                margin-bottom: 6px;
+                                color: #333;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                text-align: center;
                             }
-                            .memory-item { 
-                                background: #f0f2f5;
-                                padding: 12px;
-                                margin-bottom: 8px;
-                                border-radius: 8px;
-                                font-size: 14px;
-                                line-height: 1.4;
-                            }
-                            .memory-item:last-child {
-                                margin-bottom: 0;
+                            .memory-note { 
+                                background: #fafafa;
+                                padding: 6px;
+                                margin: 4px 0;
+                                border-radius: 3px;
+                                border-left: 2px solid #000;
+                                font-size: 7px;
+                                line-height: 1.3;
                             }
                             .memory-date { 
-                                color: #65676b;
-                                font-size: 12px;
-                                margin-bottom: 6px;
-                                font-weight: 400;
+                                color: #666;
+                                font-size: 6px;
+                                margin-bottom: 3px;
+                                font-weight: 500;
                             }
                             .memory-text { 
-                                color: #1c1e21;
-                                font-size: 14px;
-                                line-height: 1.5;
+                                color: #333;
+                                font-size: 7px;
+                                line-height: 1.3;
                                 word-wrap: break-word;
-                            }
-                            .memory-icon {
-                                color: #65676b;
-                                margin-right: 4px;
                             }
                             @media print {
                                 body { 
@@ -530,7 +519,7 @@
                                 .album-section { 
                                     page-break-inside: avoid; 
                                 }
-                                .memory-post { 
+                                .photo-frame { 
                                     page-break-inside: avoid;
                                     break-inside: avoid;
                                 }
@@ -556,34 +545,29 @@
                     htmlContent += `
                         <div class="album-section">
                             <div class="album-title">📂 ${albumName}</div>
-                            <div class="memory-feed">
+                            <div class="photo-grid">
                     `;
                     
                     albumPhotos.forEach(photo => {
                         htmlContent += `
-                            <div class="memory-post">
-                                <div class="post-header">
-                                    <div class="post-photo-name">${photo.name}</div>
-                                    <div class="post-album">${albumName} • ${new Date(photo.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                                </div>
+                            <div class="photo-frame">
                                 <div class="photo-container">
                                     <img src="${photo.src}" class="photo-img" alt="${photo.name}">
                                 </div>
-                                <div class="post-footer">
+                                <div class="photo-name">${photo.name}</div>
                         `;
                         
                         photo.comments.forEach(comment => {
                             const commentDate = new Date(comment.date);
                             htmlContent += `
-                                <div class="memory-item">
-                                    <div class="memory-date"><span class="memory-icon">💭</span>${commentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at ${commentDate.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'})}</div>
+                                <div class="memory-note">
+                                    <div class="memory-date">${commentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${commentDate.toLocaleTimeString('en-US', {hour: 'numeric', minute:'2-digit'})}</div>
                                     <div class="memory-text">${comment.text}</div>
                                 </div>
                             `;
                         });
                         
                         htmlContent += `
-                                </div>
                             </div>
                         `;
                     });
