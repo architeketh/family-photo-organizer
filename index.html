@@ -637,6 +637,10 @@
             };
 
             const startEditingAlbum = (albumName) => {
+                if (!verifyDeletePassword()) {
+                    alert('Incorrect password');
+                    return;
+                }
                 setEditingAlbum(albumName);
                 setEditAlbumName(albumName);
             };
@@ -918,7 +922,7 @@
 
                     <div className="max-w-7xl mx-auto px-4 py-6">
                         <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border border-gray-700/50 p-5 mb-6 rounded-2xl backdrop-blur-sm shadow-2xl">
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-1.5">
                                 <h3 className="text-xs font-bold text-blue-400 uppercase tracking-wider mr-2">Albums</h3>
                                 
                                 <button 
