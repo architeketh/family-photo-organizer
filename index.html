@@ -937,7 +937,7 @@
                                 
                                 <div className="w-px h-6 bg-gray-600/50"></div>
                                 
-                                {albums.map(album => (
+                                {[...albums].sort((a, b) => a.localeCompare(b)).map(album => (
                                     <div key={album} className="flex items-center group">
                                         {editingAlbum === album ? (
                                             <div className="flex gap-1">
@@ -1072,7 +1072,7 @@
                                                             </div>
                                                         )}
                                                         <select value={photo.album} onChange={(e) => moveToAlbum(photo.id, e.target.value)} className="flex-1 px-3 py-1.5 text-xs bg-gray-800/80 text-white border border-gray-700/50 outline-none rounded-xl backdrop-blur-sm font-medium shadow-md">
-                                                            {albums.map(album => (
+                                                            {[...albums].sort((a, b) => a.localeCompare(b)).map(album => (
                                                                 <option key={album} value={album}>📁 {album}</option>
                                                             ))}
                                                         </select>
